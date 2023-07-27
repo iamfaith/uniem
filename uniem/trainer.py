@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Sequence, Sized
+from typing import Any, Callable, Sequence, Sized, Dict, List
 
 import torch
 from accelerate import Accelerator
@@ -22,12 +22,12 @@ class Trainer:
         train_dataloader: DataLoader,
         optimizer: Optimizer,
         accelerator: Accelerator,
-        validation_dataloader: DataLoader | None = None,
+        validation_dataloader: Union[DataLoader, None] = None,
         epochs: int = 3,
-        lr_scheduler: LRScheduler | None = None,
+        lr_scheduler: Union[LRScheduler, None] = None,
         log_interval: int = 50,
         save_on_epoch_end: bool = True,
-        epoch_end_callbacks: Sequence[Callable[['Trainer'], None]] | None = None,
+        epoch_end_callbacks: Union[Sequence[Callable[['Trainer'], None]], None] = None,
     ):
         self.model = model
         self.optimizer = optimizer
@@ -97,19 +97,19 @@ class Trainer:
 
         self.accelerator.end_training()
 
-    def log_metrics(self, metrics: dict[str, float], step: int):
+    def log_metrics(self, metrics: Dict[str, float], step: int):
         self.accelerator.log(metrics, step=step)
         self.progress_bar.show_metrics(metrics)
 
     @staticmethod
-    def add_prefix(values: dict[str, Any], prefix: str):
+    def add_prefix(values: Dict[str, Any], prefix: str):
         return {f'{prefix}/{k}': v for k, v in values.items()}
 
 
 def evaluate(
     model: torch.nn.Module,
     dataloader: DataLoader,
-    loss_tracker: LossTracker | None = None,
+    loss_tracker: Union[LossTracker, None] = None,
 ):
     model = model.eval()
     loss_tracker = loss_tracker or LossTracker()
@@ -134,7 +134,7 @@ class DummyProgressBar:
 
 
 class DistributedTqdmProgressBar:
-    def __init__(self, epochs: int, num_steps_per_epoch: int | None, **kwargs) -> None:
+    def __init__(self, epochs: int, num_steps_per_epoch: Union[int, None], **kwargs) -> None:
         self.accelerator = Accelerator()
         self.epochs = epochs
         self.current_epoch = 1
@@ -157,7 +157,7 @@ class DistributedTqdmProgressBar:
         self.current_epoch += 1
         self.progress_bar.close()
 
-    def show_metrics(self, metrics: dict[str, float]) -> None:
+    def show_metrics(self, metrics: Dict[str, float]) -> None:
         description = f'Epoch {self.current_epoch}/{self.epochs}'
         for name, score in metrics.items():
             description += f' - {name}: {score:.4f}'
@@ -172,7 +172,7 @@ class LossTracker:
         self.ndigits = ndigits
         self._loss: float = 0.0
         self.loss_count: int = 0
-        self.history: list[float] = []
+        self.history: List[float] = []
 
     def update(self, loss_tensor: torch.Tensor):
         loss = loss_tensor.item()

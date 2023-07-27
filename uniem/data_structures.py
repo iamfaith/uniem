@@ -1,6 +1,6 @@
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import Any
+from typing import Any, Dict
 
 
 class RecordType(str, Enum):
@@ -8,21 +8,45 @@ class RecordType(str, Enum):
     TRIPLET = 'triplet'
     SCORED_PAIR = 'scored_pair'
 
+# 导入dataclasses模块
+from dataclasses import dataclass
 
-@dataclass(slots=True)
+# 定义一个装饰器函数，用来生成__slots__属性
+def with_slots(cls):
+    # 获取所有带有类型注解的字段名
+    slots = [name for name, value in cls.__dict__.items() if isinstance(value, type)]
+    # 如果有字段带有类型注解，就创建__slots__属性
+    if slots:
+        cls.__slots__ = slots
+    # 返回类对象
+    return cls
+
+# 使用with_slots()函数和dataclass()函数，创建一个带有__slots__属性的类
+@dataclass
+@with_slots
 class PairRecord:
     text: str
     text_pos: str
 
 
-@dataclass(slots=True)
+# @dataclass(slots=True)
+# class PairRecord:
+#     text: str
+#     text_pos: str
+
+
+# @dataclass(slots=True)
+@dataclass
+@with_slots
 class TripletRecord:
     text: str
     text_pos: str
     text_neg: str
 
 
-@dataclass(slots=True)
+# @dataclass(slots=True)
+@dataclass
+@with_slots
 class ScoredPairRecord:
     sentence1: str
     sentence2: str
@@ -30,7 +54,7 @@ class ScoredPairRecord:
 
 
 # * Order matters
-record_type_cls_map: dict[RecordType, Any] = {
+record_type_cls_map: Dict[RecordType, Any] = {
     RecordType.SCORED_PAIR: ScoredPairRecord,
     RecordType.TRIPLET: TripletRecord,
     RecordType.PAIR: PairRecord,

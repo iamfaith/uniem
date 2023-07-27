@@ -5,9 +5,9 @@ try:
     from sentence_transformers import SentenceTransformer
 
     from uniem.utils import create_attention_mask_from_input_ids
-
+    from typing import Union
     class SentenceTransformerWrapper(SentenceTransformer):
-        def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor | None = None):
+        def forward(self, input_ids: torch.Tensor, attention_mask: Union[torch.Tensor, None] = None):
             if attention_mask is None:
                 attention_mask = create_attention_mask_from_input_ids(input_ids, self.pad_token_id)
             output = super().forward({'input_ids': input_ids, 'attention_mask': attention_mask})

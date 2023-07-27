@@ -7,7 +7,7 @@ from enum import Enum
 from functools import wraps
 from itertools import islice
 from pathlib import Path
-from typing import Annotated, Any, Callable, Generator, Iterable, Optional, Sequence, Type, TypeVar, cast
+from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Type, TypeVar, cast, Union, Dict, List, Tuple
 
 import torch
 import typer
@@ -24,7 +24,7 @@ class ConfigFileType(str, Enum):
     json = 'json'
 
 
-def load_from_yaml(yaml_file: str | Path) -> dict[str, Any]:
+def load_from_yaml(yaml_file: Union[str, Path]) -> Dict[str, Any]:
     yaml_file = Path(yaml_file)
     if not yaml_file.exists():
         raise FileExistsError(f'File {yaml_file} does not exist')
@@ -33,7 +33,7 @@ def load_from_yaml(yaml_file: str | Path) -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
-def load_from_json(json_file: str | Path) -> dict[str, Any]:
+def load_from_json(json_file: Union[str, Path]) -> Dict[str, Any]:
     json_file = Path(json_file)
     if not json_file.exists():
         raise FileExistsError(f'File {json_file} does not exist')
@@ -42,7 +42,7 @@ def load_from_json(json_file: str | Path) -> dict[str, Any]:
         return json.load(f)
 
 
-def load_config_file(config_file: str | Path, file_type: ConfigFileType | str | None = None) -> dict[str, Any]:
+def load_config_file(config_file: Union[str, Path], file_type: Union[ConfigFileType, str, None] = None) -> Dict[str, Any]:
     config_file = Path(config_file)
 
     if file_type is None:
@@ -56,10 +56,9 @@ def load_config_file(config_file: str | Path, file_type: ConfigFileType | str | 
     else:
         file_type = ConfigFileType(file_type)
 
-    match file_type:
-        case ConfigFileType.yaml:
+    if file_type == ConfigFileType.yaml:
             config = load_from_yaml(config_file)
-        case ConfigFileType.json:
+    elif file_type == ConfigFileType.json:
             config = load_from_json(config_file)
     return config
 
@@ -76,14 +75,17 @@ def _config_file_callback(ctx: typer.Context, param: typer.CallbackParam, param_
     return param_value
 
 
-ConfigFile = Annotated[
-    Optional[Path],
-    typer.Option(..., callback=_config_file_callback, is_eager=True, help='Config file path, supports yaml and json'),
-]
+# ConfigFile = Annotated[
+#     Optional[Path],
+#     typer.Option(..., callback=_config_file_callback, is_eager=True, help='Config file path, supports yaml and json'),
+# ]
+
+ConfigFile = Optional[Path]
+# ConfigFile: Annotated[Optional[Path], typer.Option(..., callback=_config_file_callback, is_eager=True, help='Config file path, supports yaml and json')]
 
 
 def load_hf_pretrained_model(
-    model_name_or_path: str, model_class: str | None | Type[PreTrainedModel] | Type[AutoModel] = None
+    model_name_or_path: str, model_class: Union[str, None, Type[PreTrainedModel], Type[AutoModel]] = None
 ) -> PreTrainedModel:
     if model_class is None:
         model_class = AutoModel
@@ -121,13 +123,13 @@ def create_attention_mask_from_input_ids(input_ids: torch.Tensor, pad_token_id: 
     return input_ids != pad_token_id
 
 
-def generate_batch(data: Iterable[T], batch_size: int = 32) -> Generator[list[T], None, None]:
+def generate_batch(data: Iterable[T], batch_size: int = 32) -> Generator[List[T], None, None]:
     iterator = iter(data)
     while batch := list(islice(iterator, batch_size)):
         yield batch
 
 
-def split_dataset_dict(dataset_dict: dict[str, T]) -> tuple[T, T | None]:
+def split_dataset_dict(dataset_dict: Dict[str, T]) -> Tuple[T, Union[T, None]]:
     if isinstance(dataset_dict, dict):
         train_dataset = dataset_dict['train']
         if 'dev' in dataset_dict:
@@ -145,7 +147,7 @@ def split_dataset_dict(dataset_dict: dict[str, T]) -> tuple[T, T | None]:
     return train_dataset, validation_dataset
 
 
-def find_executable_batch_size(function: Callable | None = None, starting_batch_size: int = 128):
+def find_executable_batch_size(function: Union[Callable, None] = None, starting_batch_size: int = 128):
     if function is None:
         return functools.partial(find_executable_batch_size, starting_batch_size=starting_batch_size)
 

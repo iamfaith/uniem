@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, TypeAlias
+from typing import Callable, List
 
 from datasets import DatasetDict
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 
-Tokenizer: TypeAlias = PreTrainedTokenizer | PreTrainedTokenizerFast
+from typing import Union
+Tokenizer = Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
 
 
 class MixedPrecisionType(str, Enum):
@@ -19,7 +20,7 @@ class MixedPrecisionType(str, Enum):
 class DatasetDescription:
     name: str
     is_symmetric: bool
-    domains: list[str]
+    domains: List[str]
     instruction_type: str
 
 
